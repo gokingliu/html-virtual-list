@@ -1,0 +1,177 @@
+<body onload="init()">
+  <div id="app">
+    <div id="listScroll"></div>
+  </div>
+</body>
+
+<style>
+  body, * {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  #app {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 0;
+  }
+
+  #listScroll {
+    height: 400px;
+    width: 50%;
+    border: orange 1px solid;
+    overflow-y: auto;
+  }
+
+  .list-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 20px;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+</style>
+
+<script>
+  /**
+   * @description 定义变量/常量
+   */
+  // 创建大数据
+  const data = Array.from({ length: 100000 }).map((item, index) => index);
+  // 每行列表的高度 (单位 px)
+  const listRowHeight = 40;
+  // 渲染偏移行数 (高性能机器偏移量越大渲染效果越好，低性能机器需要合理设置)
+  const offsetRowNum = 4;
+  // 记录滚动数据
+  let scrollActionY, scrollDirection;
+  // 获取滚动列表盒子元素
+  const listScrollBox = document.getElementById('listScroll');
+  // 获取 scrollBox 高度
+  const listScrollOffsetHeight = listScrollBox.offsetHeight;
+  // 获取能够显示的列表行数
+  const listRowNum = Math.ceil(listScrollOffsetHeight / listRowHeight) + offsetRowNum;
+  // 创建基础行元素
+  const baseListRowDIV = document.createElement('div');
+  // 设置基础行元素样式
+  baseListRowDIV.className = 'list-row';
+  baseListRowDIV.style.height = `${listRowHeight}px`;
+  // 节流器
+  let timer;
+
+  /**
+   * @description 函数方法
+   */
+  // 页面加载完成
+  const init = () => {
+    // 初次渲染元素数据
+    renderElement(dataSplice());
+  };
+  // 监听 scrollBox 滚动事件
+  listScrollBox.onscroll = () => {
+    // 获取滚动方向
+    getScrollDirection();
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      // 获取 scrollBox 子元素
+      const childNodes = listScrollBox.childNodes;
+      // 列表向下或向上滚动时
+      if (scrollDirection === 'down' || !scrollDirection) {
+        // 获取 scrollBox 第一个子元素
+        const firstChildNodeID = childNodes?.[0]?.id ?? '';
+        // 获取第一个子元素距离顶部的距离
+        const firstChildNodeDistance = getElementDistance(firstChildNodeID, 'top');
+        // 当第一行的元素距离顶部小于 offsetRowNum 行时(向下滚动)
+        if (firstChildNodeDistance < -listRowHeight * offsetRowNum) {
+          // 删除元素
+          removeElement(childNodes, 'top');
+          // 渲染新的元素
+          renderElement(getRenderData(dataSplice(+firstChildNodeID + offsetRowNum), childNodes), 'top');
+        }
+      } else {
+        // 获取 scrollBox 最后一个子元素
+        const lastChildNodeID = childNodes?.[childNodes.length - 1]?.id ?? '';
+        // 获取最后一个子元素距离顶部的距离
+        const lastChildNodeDistance = getElementDistance(lastChildNodeID, 'bottom');
+        // 当最后一行的元素距离大于偏移距离时(向上滚动)
+        if (lastChildNodeDistance > listRowHeight * offsetRowNum) {
+          // 删除元素
+          removeElement(childNodes, 'bottom');
+          // 渲染新的元素
+          renderElement(getRenderData(dataSplice(+lastChildNodeID - listRowNum - offsetRowNum + 1), childNodes), 'bottom');
+        }
+      }
+    });
+  };
+  // 获取滚动方向
+  const getScrollDirection = () => {
+    // 获取第一个元素距离顶部的距离
+    const getTop = () => listScrollBox.childNodes[0]?.getBoundingClientRect().top;
+    // 记录第一个元素距离顶部的距离
+    if (typeof scrollActionY === void 0) scrollActionY = getTop();
+    // 再次获取第一个元素距离顶部的距离并减去上一次的记录值，得到偏移量
+    const diffY = getTop() - scrollActionY;
+    // 偏移量小于 0 是向下滚动
+    if (diffY < 0) {
+      scrollDirection = 'down';
+    }
+    // 偏移量大于 0 是向上滚动
+    if (diffY > 0) {
+      scrollDirection = 'up';
+    }
+    // 最后记录第一个元素距离顶部的距离，因为有时差，所以值会发生变化
+    scrollActionY = getTop();
+  };
+  // 截取大数据 n 行显示
+  const dataSplice = (startNum = 0) => data.slice(startNum, startNum + listRowNum);
+  // 获取需要渲染的数据
+  const getRenderData = (data, nodes) => {
+    // 声明变量
+    const ids = [];
+    // 获取节点 id 数组
+    for (let i = 0; i < nodes.length; i++) ids.push(+nodes[i].id);
+    // 返回不在节点数组中的数据
+    return data.filter(item => !ids.includes(item));
+  };
+  // 渲染元素
+  const renderElement = (data, direction = 'top') => {
+    // 遍历渲染的数据
+    data
+    .sort((x, y) => direction === 'top' ? x -y : y -x)
+    .forEach(row => {
+      // 拷贝基础行元素
+      const cloneRow = baseListRowDIV.cloneNode(false);
+      // 设置拷贝元素内容
+      cloneRow.innerHTML = `<p>${row}</p>`;
+      // 设置拷贝元素 ID
+      cloneRow.id = `${row}`;
+      // 设置拷贝元素样式
+      if ((row % 2) === 0) cloneRow.style.backgroundColor = '#e8e8e8';
+      // 插入拷贝元素到 scrollBox 底部
+      if (direction === 'top') listScrollBox.appendChild(cloneRow);
+      // 插入拷贝元素到 scrollBox 顶部
+      if (direction === 'bottom') listScrollBox.insertBefore(cloneRow, listScrollBox.childNodes[0]);
+    });
+  };
+  // 删除元素
+  const removeElement = (nodes, direction) => nodes[{ top: 0, bottom: nodes.length - 1 }[direction]].remove();
+  // 获取元素到顶部/底部的距离
+  const getElementDistance = (id, direction) => {
+    // scrollBox 顶部/底部距离 (加上 border 的高度 1)
+    const listScrollBoxDistance = listScrollBox.getBoundingClientRect()[direction] + 1;
+    // 元素顶部/底部距离
+    const elementDistance = document.getElementById(id)?.getBoundingClientRect()[direction] ?? 0;
+    // 元素相对于 scrollBox 的顶部/底部距离
+    return elementDistance - listScrollBoxDistance;
+  };
+  // 页面关闭时，进行数据销毁
+  window.onunload = () => {
+    baseListRowDIV.remove();
+    listScrollBox.remove();
+  };
+</script>
