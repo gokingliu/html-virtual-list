@@ -47,7 +47,7 @@
   // 每行列表的高度 (单位 px)
   const listRowHeight = 40;
   // 渲染偏移行数 (高性能机器偏移量越大渲染效果越好，低性能机器需要合理设置)
-  const offsetRowNum = 4;
+  const offsetRowNum = 6;
   // 记录滚动数据
   let scrollActionY, scrollDirection;
   // 获取滚动列表盒子元素
@@ -61,8 +61,6 @@
   // 设置基础行元素样式
   baseListRowDIV.className = 'list-row';
   baseListRowDIV.style.height = `${listRowHeight}px`;
-  // 节流器
-  let timer;
 
   /**
    * @description 函数方法
@@ -76,37 +74,36 @@
   listScrollBox.onscroll = () => {
     // 获取滚动方向
     getScrollDirection();
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      // 获取 scrollBox 子元素
-      const childNodes = listScrollBox.childNodes;
-      // 列表向下或向上滚动时
-      if (scrollDirection === 'down' || !scrollDirection) {
-        // 获取 scrollBox 第一个子元素
-        const firstChildNodeID = childNodes?.[0]?.id ?? '';
-        // 获取第一个子元素距离顶部的距离
-        const firstChildNodeDistance = getElementDistance(firstChildNodeID, 'top');
-        // 当第一行的元素距离顶部小于 offsetRowNum 行时(向下滚动)
-        if (firstChildNodeDistance < -listRowHeight * offsetRowNum) {
-          // 删除元素
-          removeElement(childNodes, 'top');
-          // 渲染新的元素
-          renderElement(getRenderData(dataSplice(+firstChildNodeID + offsetRowNum), childNodes), 'top');
-        }
-      } else {
-        // 获取 scrollBox 最后一个子元素
-        const lastChildNodeID = childNodes?.[childNodes.length - 1]?.id ?? '';
-        // 获取最后一个子元素距离顶部的距离
-        const lastChildNodeDistance = getElementDistance(lastChildNodeID, 'bottom');
-        // 当最后一行的元素距离大于偏移距离时(向上滚动)
-        if (lastChildNodeDistance > listRowHeight * offsetRowNum) {
-          // 删除元素
-          removeElement(childNodes, 'bottom');
-          // 渲染新的元素
-          renderElement(getRenderData(dataSplice(+lastChildNodeID - listRowNum - offsetRowNum + 1), childNodes), 'bottom');
-        }
+    // 获取 scrollBox 子元素
+    const childNodes = listScrollBox.childNodes;
+    // 列表向下或向上滚动时
+    if (scrollDirection === 'down' || !scrollDirection) {
+      // 获取 scrollBox 第一个子元素
+      const firstChildNodeID = childNodes?.[0]?.id ?? '';
+      // 获取第一个子元素距离顶部的距离
+      const firstChildNodeDistance = getElementDistance(firstChildNodeID, 'top');
+      // 当第一行的元素距离顶部小于 offsetRowNum 行时(向下滚动)
+      if (firstChildNodeDistance < -listRowHeight * offsetRowNum) {
+        // 删除元素
+        removeElement(childNodes, 'top');
+        // 渲染新的元素
+        renderElement(getRenderData(dataSplice(+firstChildNodeID + offsetRowNum), childNodes), 'top');
       }
-    });
+    } else {
+      // 获取 scrollBox 最后一个子元素
+      const lastChildNodeID = childNodes?.[childNodes.length - 1]?.id ?? '';
+      // 获取最后一个子元素距离顶部的距离
+      const lastChildNodeDistance = getElementDistance(lastChildNodeID, 'bottom');
+      // 当最后一行的元素距离大于偏移距离时(向上滚动)
+      if (lastChildNodeDistance > listRowHeight * offsetRowNum) {
+        // 删除元素
+        removeElement(childNodes, 'bottom');
+        // 渲染新的元素
+        renderElement(getRenderData(dataSplice(+lastChildNodeID - listRowNum - offsetRowNum + 1), childNodes), 'bottom');
+        // 重定位
+        listScrollBox.scrollTop = listRowHeight * offsetRowNum;
+      }
+    }
   };
   // 获取滚动方向
   const getScrollDirection = () => {
