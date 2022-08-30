@@ -2,7 +2,7 @@
 
 基于原生 html、css、javascript 的虚拟列表 demo
 
-在线预览：https://raw.githubusercontent.com/gokingliu/html-virtual-list/main/virtual-scroll.html
+在线预览：https://codepen.io/gokingliu/pen/abYepgq
 
 ## WIP...
 
